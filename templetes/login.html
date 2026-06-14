@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bogga Login-ka</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            width: 350px;
+            text-align: center;
+        }
+        h2 { margin-bottom: 20px; color: #333; }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover { background-color: #1d4ed8; }
+        .links {
+            margin-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+        .links a { color: #2563eb; text-decoration: none; }
+        .links a:hover { text-shadow: 0 0 1px #2563eb; }
+        .social-login {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .btn-social {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 14px;
+            color: white;
+        }
+        .btn-google { background-color: #db4437; }
+        .btn-facebook { background-color: #4267B2; }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <h2>Soo Dhawoow</h2>
+    
+    <!-- Foomka caadiga ah ee Login-ka -->
+    <form action="/login" method="POST">
+        <input type="text" name="username" placeholder="Email ama Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Soo Gali (Login)</button>
+    </form>
+
+    <!-- Labada Link ee Forget Password iyo Diiwaan-gelinta -->
+    <div class="links">
+        <a href="/forget-password">Password-ka ma ilowday?</a>
+        <a href="/signup">Sameey Akoon (Signup)</a>
+    </div>
+
+    <!-- Badamada Google iyo Facebook -->
+    <div class="social-login">
+        <p style="font-size: 13px; color: #666;">Ama ku gal boggagan:</p>
+        <a href="/login/google" class="btn-social btn-google">Ku gal Google</a>
+        <a href="/login/facebook" class="btn-social btn-facebook">Ku gal Facebook</a>
+    </div>
+</div>
+
+</body>
+</html>
