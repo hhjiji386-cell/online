@@ -20,6 +20,11 @@ def home():
 def login_page():
     return render_template('login.html')
 
+# --- ROUTE TO DISPLAY THE SIGNUP PAGE ---
+@app.route('/signup')
+def signup_page():
+    return render_template('signup.html')
+
 # --- ROUTE TO DISPLAY THE SYSTEM DASHBOARD ---
 @app.route('/dashboard')
 def dashboard_page():
@@ -79,5 +84,4 @@ def latest():
     filtered_data.sort(key=lambda x: x["timestamp"], reverse=True)
     return jsonify({"status": "ok", "data": filtered_data[:500]})
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# FOOMKAAN WAA LAGA SAARAY app.run(debug=True) SABABTOO AH VERCEL AYAA MAAMULAYA SERVER-KA
