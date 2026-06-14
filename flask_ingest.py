@@ -1,60 +1,88 @@
 import os
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect, url_location
 from flask_cors import CORS
 from datetime import datetime, timedelta
 
-# Nidaamka rasmiga ah ee Vercel ku qasbaya galka templates
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
 CORS(app)
 
-# In-memory storage block for serverless compatibility
+# Meesha si ku-meel-gaar ah loogu kaydinayo dadka iska diiwaan-geliyay (In-memory Database)
+users_db = {
+    "admin@example.com": "12345"  # Tusaale akoon horey u jiray
+}
 telemetry_storage = []
 
-# --- ROUTE TO DISPLAY WELCOME LANDING PAGE ---
+# --- 1. BOGGA HORE (HOME) ---
 @app.route('/')
 def home():
     return render_template('index.html')
 
-# --- ROUTE TO DISPLAY WEBCODE CLOCK LOGIN PAGE ---
-@app.route('/login')
+# --- 2. BOGGA LOGIN-KA (GET iyo POST) ---
+@app.route('/login', methods=['GET', 'POST'])
 def login_page():
+    if request.method == 'POST':
+        # Haddii foomka caadiga ah la soo buuxiyo
+        email = request.form.get('username') or request.form.get('email')
+        password = request.form.get('password')
+        
+        if email in users_db and users_db[email] == password:
+            return redirect('/dashboard') # Haddii uu sax yahay wuxuu u gudbayaa dashboard
+        else:
+            return "Erayga sirta ah ama Email-ka ayaa khaldan!", 401
+            
     return render_template('login.html')
 
-# --- ROUTE TO DISPLAY THE SIGNUP PAGE ---
-@app.route('/signup')
+# --- 3. BOGGA SIGNUP-KA (GET iyo POST) ---
+@app.route('/signup', methods=['GET', 'POST'])
 def signup_page():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        if not email or not password:
+            return "Fadlan buuxi dhammaan meelaha banaan!", 400
+            
+        # Keydi isticmaalaha cusub
+        users_db[email] = password
+        return "Diiwaan-gelinta waa ay guuleysatay! Hadda dib u laabo oo Login dheh."
+        
     return render_template('signup.html')
 
-# --- ROUTE TO DISPLAY THE SYSTEM DASHBOARD ---
+# --- 4. BOGGA PASSWORD-KA LA ILOOBAY (FORGET PASSWORD) ---
+@app.route('/forget-password', methods=['GET', 'POST'])
+def forget_password():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        if email in users_db:
+            return f"Xiriirka dib-u-dejinta erayga sirta ah waxaa loo diray: {email}"
+        return "Email-kan laguma hayo nidaamka!", 404
+        
+    return "Halkan ku qor koodhka foomka forget password ama render_template('forget.html')"
+
+# --- 5. BADANADA GOOGLE IYO FACEBOOK ---
+@app.route('/login/google')
+def login_google():
+    # Halkan waxaa la dhigaa nidaamka rasmiga ah ee Google OAuth
+    return "Wuxuu u wareegayaa boggaga aqoonsiga ee Google..."
+
+@app.route('/login/facebook')
+def login_facebook():
+    # Halkan waxaa la dhigaa nidaamka rasmiga ah ee Facebook OAuth
+    return "Wuxuu u wareegayaa boggaga aqoonsiga ee Facebook..."
+
+# --- 6. SYSTEM DASHBOARD ---
 @app.route('/dashboard')
 def dashboard_page():
     return render_template('dashboard.html')
 
-# --- API ROUTE TO PROCESS LOGIN SUBMISSIONS ---
-@app.route('/api/login', methods=['POST'])
-def handle_login():
-    if not request.is_json:
-        return jsonify({"status": "error", "message": "JSON body format required"}), 400
-        
-    data = request.get_json()
-    email = data.get('username')
-    password = data.get('password')
-    
-    if email == "admin@example.com" and password == "12345":
-        return jsonify({"status": "success", "message": "Login authorization accepted!"}), 200
-        
-    return jsonify({"status": "error", "message": "Access Denied: Invalid credentials"}), 401
-
-# --- TELEMETRY INGESTION ENDPOINTS ---
+# --- 7. TELEMETRY INGESTION ENDPOINTS (Koodhkii aad hore u lahayd) ---
 @app.route("/api/ingest", methods=["POST"])
 def ingest():
     if not request.is_json:
         return jsonify({"status": "error", "message": "JSON required"}), 400
-        
     payload = request.get_json()
     rows = payload if isinstance(payload, list) else [payload]
     now = datetime.utcnow().isoformat() + "Z"
-    
     for row in rows:
         telemetry_storage.append({
             "device_id": row.get("device_id", "unknown"),
@@ -65,23 +93,14 @@ def ingest():
             "status": row.get("status", ""),
             "created_at": now
         })
-    
     if len(telemetry_storage) > 1000:
         del telemetry_storage[:len(telemetry_storage) - 500]
-        
     return jsonify({"status": "ok", "rows": len(rows)}), 201
 
 @app.route("/api/latest", methods=["GET"])
 def latest():
     minutes = int(request.args.get("minutes", 10))
     threshold = (datetime.utcnow() - timedelta(minutes=minutes)).isoformat() + "Z"
-    
-    filtered_data = [
-        row for row in telemetry_storage 
-        if row["timestamp"] >= threshold
-    ]
-    
+    filtered_data = [row for row in telemetry_storage if row["timestamp"] >= threshold]
     filtered_data.sort(key=lambda x: x["timestamp"], reverse=True)
     return jsonify({"status": "ok", "data": filtered_data[:500]})
-
-# FOOMKAAN WAA LAGA SAARAY app.run(debug=True) SABABTOO AH VERCEL AYAA MAAMULAYA SERVER-KA
