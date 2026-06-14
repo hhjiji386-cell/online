@@ -1,8 +1,10 @@
+import os
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
-app = Flask(__name__)
+# Nidaamka rasmiga ah ee Vercel ku qasbaya inuu galka templates si toos ah u dhex daloosho
+app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
 CORS(app)
 
 # In-memory storage block for serverless compatibility
@@ -11,19 +13,16 @@ telemetry_storage = []
 # --- ROUTE TO DISPLAY WELCOME LANDING PAGE ---
 @app.route('/')
 def home():
-    # Looks inside /templates folder for index.html
     return render_template('index.html')
 
 # --- ROUTE TO DISPLAY WEBCODE CLOCK LOGIN PAGE ---
 @app.route('/login')
 def login_page():
-    # Looks inside /templates folder for login.html
     return render_template('login.html')
 
 # --- ROUTE TO DISPLAY THE SYSTEM DASHBOARD ---
 @app.route('/dashboard')
 def dashboard_page():
-    # Looks inside /templates folder for dashboard.html
     return render_template('dashboard.html')
 
 # --- API ROUTE TO PROCESS LOGIN SUBMISSIONS ---
@@ -33,12 +32,9 @@ def handle_login():
         return jsonify({"status": "error", "message": "JSON body format required"}), 400
         
     data = request.get_json()
-    
-    # Extract values sent from frontend Javascript input fields
     email = data.get('username')
     password = data.get('password')
     
-    # Basic verification logic (Replace with your database checks later)
     if email == "admin@example.com" and password == "12345":
         return jsonify({"status": "success", "message": "Login authorization accepted!"}), 200
         
@@ -52,7 +48,7 @@ def ingest():
         
     payload = request.get_json()
     rows = payload if isinstance(payload, list) else [payload]
-    now = datetime.utcnow().isoformat() + "Z"
+    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     
     for row in rows:
         telemetry_storage.append({
@@ -65,7 +61,6 @@ def ingest():
             "created_at": now
         })
     
-    # Keep local storage size controlled
     if len(telemetry_storage) > 1000:
         del telemetry_storage[:len(telemetry_storage) - 500]
         
@@ -74,17 +69,14 @@ def ingest():
 @app.route("/api/latest", methods=["GET"])
 def latest():
     minutes = int(request.args.get("minutes", 10))
-    threshold = (datetime.utcnow() - timedelta(minutes=minutes)).isoformat() + "Z"
+    threshold = (datetime.now(timezone.utc) - timedelta(minutes=minutes)).isoformat().replace("+00:00", "Z")
     
-    # Filter incoming historical readings safely
     filtered_data = [
         row for row in telemetry_storage 
         if row["timestamp"] >= threshold
     ]
     
-    # Sort data showing newest updates first
     filtered_data.sort(key=lambda x: x["timestamp"], reverse=True)
-    
     return jsonify({"status": "ok", "data": filtered_data[:500]})
 
 if __name__ == '__main__':
