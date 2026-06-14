@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - IOT Gateway</title>
+    
+    <!-- Supabase JS Library ( CDN-ka rasmiga ah oo la saxay ) -->
+    <script src="https://jsdelivr.net"></script>
+
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .dashboard-box {
+            background: #ffffff;
+            width: 450px;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+        h1 {
+            color: #1f2937;
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+        p {
+            color: #4b5563;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .user-email {
+            color: #4f46e5;
+            font-weight: bold;
+        }
+        .btn-logout {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 12px 30px;
+            background-color: #dc2626;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .btn-logout:hover {
+            background-color: #b91c1c;
+        }
+        
+        /* Qaybta Naqshadda IoT Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .metric-card {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+            text-align: center;
+        }
+        .metric-card.full-width {
+            grid-column: span 2;
+        }
+        .metric-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #6b7280;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .metric-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #111827;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-box">
+        <h1>Kushiraxan Dashboard-kaaga Caamiga ah!</h1>
+        
+        <!-- Muujinta Email-ka -->
+        <p>Waxaad ku soo gashay email-ka: <span class="user-email" id="display-email">Xaqiijinaya...</span></p>
+        <p>Kani waa deegaankaaga gaarka ah ee amniga ah.</p>
+
+        <!-- Meesha IoT Metrics (Heerka Biyaha & Cimilada) -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-title">Heerka Kulka (Temp)</div>
+                <div class="metric-value" id="temp-val">-- °C</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-title">Uumi-baxa (Humidity)</div>
+                <div class="metric-value" id="hum-val">-- %</div>
+            </div>
+            <div class="metric-card full-width">
+                <div class="metric-title">Heerka Biyaha (Water Level)</div>
+                <div class="metric-value" id="water-val">-- m</div>
+            </div>
+        </div>
+
+        <!-- Badhamada bixitaanka nidaamka -->
+        <a href="http://127.0.0.1" class="btn-logout" id="logout-link">Log Out (Ka Bax)</a>
+    </div>
+
+<script>
+    // 1. Habaynta Supabase Config
+    const supabaseUrl = "https://supabase.co";
+    const supabaseKey = "sb_publishable_eDskTzDraePwlaXa5Y3z5Q_fUe4O-Lk";
+    
+    // Habka rasmiga ah ee loo abuuro supabase client
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        const emailSpan = document.getElementById('display-email');
+        const logoutLink = document.getElementById('logout-link');
+        
+        // --- QAYBTA 1: Hubi URL Hash (Haddii laga soo laabtay OAuth) ---
+        const hash = window.location.hash;
+        if (hash) {
+            const params = new URLSearchParams(hash.replace("#", "?"));
+            const accessToken = params.get("access_token");
+
+            if (accessToken) {
+                try {
+                    const base64Url = accessToken.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                        return '%' + ('0' + c.charCodeAt(0).toString(16)).slice(-2);
+                    }).join(''));
+
+                    const userData = JSON.parse(jsonPayload);
+                    if (userData && userData.email) {
+                        emailSpan.textContent = userData.email;
+                        console.log("OAuth Isticmaale si guul leh ayaa loo aqoonsaday: " + userData.email);
+                    }
+                } catch (e) {
+                    console.error("Token-ka waa la akhriyi waayey:", e);
+                }
+            }
+        }
+        
+        // --- QAYBTA 2: Hubi Nidaamka Logout Link ---
+        if (window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+            logoutLink.href = "/logout"; 
+        }
+
+        // --- QAYBTA 3: Hubi Session-ka una gudub akhrinta xogta ---
+        await checkUserAndLoadMetrics();
+
+        // Cusboonaysiin IoT xogta 5 ilbiriqsi kasta (Real-time reload)
+        setInterval(loadAllMyData, 5000);
+    });
+
+    // Hubinta qofka soo galay
+    async function checkUserAndLoadMetrics() {
+        const emailSpan = document.getElementById('display-email');
+
+        const { data: { session }, error: authError } = await supabaseClient.auth.getSession();
+        
+        if (authError || !session) {
+            console.log("Qofna ma soo gelin. Loo weecinayo bogga hore...");
+            if (emailSpan.textContent === "Xaqiijinaya...") {
+                window.location.href = "index.html"; 
+                return;
+            }
+            return;
+        }
+
+        emailSpan.textContent = session.user.email;
+        console.log("Qofka soo galay waa:", session.user.email);
+
+        // Markii qofka la xaqiijiyo, soo akhri xogta IoT markii ugu horreysay
+        await loadAllMyData();
+    }
+
+    // SHAQADA AKHRISKA XOGTA IOT (Environment & Water Telemetry)
+    async function loadAllMyData() {
+        try {
+            console.log("Xog cusub ayaa la soo akhrinayaa...");
+
+            // 1. Soo akhri Cimilada (Temperature & Humidity)
+            const { data: env, error: envError } = await supabaseClient
+                .from('environment_data')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+            if (envError) throw envError;
+
+            // 2. Soo akhri Biyaha (Water Metrics)
+            const { data: water, error: waterError } = await supabaseClient
+                .from('telemetry')
+                .select('*')
+                .eq('device_id', 'water-001')
+                .order('timestamp', { ascending: false });
+
+            if (waterError) throw waterError;
+
+            // 3. Ku shub xogta Cimilada UI-ga
+            if (env && env.length > 0) {
+                document.getElementById('temp-val').innerText = `${env[0].temperature} °C`;
+                document.getElementById('hum-val').innerText = `${env[0].humidity} %`;
+            } else {
+                document.getElementById('temp-val').innerText = "No Data";
+                document.getElementById('hum-val').innerText = "No Data";
+            }
+
+            // 4. Ku shub xogta Biyaha UI-ga (Heerka Biyaha)
+            if (water && water.length > 0) {
+                const waterLevel = water.find(d => d.metric === 'water_level');
+                if (waterLevel) {
+                    document.getElementById('water-val').innerText = `${waterLevel.value} m`;
+                } else {
+                    document.getElementById('water-val').innerText = "No Metric";
+                }
+            } else {
+                document.getElementById('water-val').innerText = "No Data";
+            }
+
+        } catch (err) {
+            console.error("Cillad ka dhacday akhrinta IoT:", err.message || err);
+        }
+    }
+</script>
+
+</body>
+</html>
