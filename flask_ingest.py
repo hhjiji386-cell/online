@@ -1,9 +1,9 @@
 import os
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 
-# Nidaamka rasmiga ah ee Vercel ku qasbaya inuu galka templates si toos ah u dhex daloosho
+# Nidaamka rasmiga ah ee Vercel ku qasbaya galka templates
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
 CORS(app)
 
@@ -48,7 +48,7 @@ def ingest():
         
     payload = request.get_json()
     rows = payload if isinstance(payload, list) else [payload]
-    now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    now = datetime.utcnow().isoformat() + "Z"
     
     for row in rows:
         telemetry_storage.append({
@@ -69,7 +69,7 @@ def ingest():
 @app.route("/api/latest", methods=["GET"])
 def latest():
     minutes = int(request.args.get("minutes", 10))
-    threshold = (datetime.now(timezone.utc) - timedelta(minutes=minutes)).isoformat().replace("+00:00", "Z")
+    threshold = (datetime.utcnow() - timedelta(minutes=minutes)).isoformat() + "Z"
     
     filtered_data = [
         row for row in telemetry_storage 
