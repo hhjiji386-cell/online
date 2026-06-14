@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, jsonify, render_template, redirect, url_location
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 from flask_cors import CORS
 from datetime import datetime, timedelta
 
@@ -57,17 +57,15 @@ def forget_password():
             return f"Xiriirka dib-u-dejinta erayga sirta ah waxaa loo diray: {email}"
         return "Email-kan laguma hayo nidaamka!", 404
         
-    return "Halkan ku qor koodhka foomka forget password ama render_template('forget.html')"
+    return render_template('forget.html') if os.path.exists(os.path.join(app.template_folder, 'forget.html')) else "Fadlan abuur faylka forget.html"
 
 # --- 5. BADANADA GOOGLE IYO FACEBOOK ---
 @app.route('/login/google')
 def login_google():
-    # Halkan waxaa la dhigaa nidaamka rasmiga ah ee Google OAuth
     return "Wuxuu u wareegayaa boggaga aqoonsiga ee Google..."
 
 @app.route('/login/facebook')
 def login_facebook():
-    # Halkan waxaa la dhigaa nidaamka rasmiga ah ee Facebook OAuth
     return "Wuxuu u wareegayaa boggaga aqoonsiga ee Facebook..."
 
 # --- 6. SYSTEM DASHBOARD ---
