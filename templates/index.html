@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login & Signup - IOT Gateway</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #4f46e5;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .card {
+            background: #ffffff;
+            width: 380px;
+            padding: 35px 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            box-sizing: border-box;
+        }
+        h1 {
+            font-size: 28px;
+            color: #1f2937;
+            margin: 0 0 25px 0;
+            text-align: center;
+            font-weight: 600;
+        }
+        input {
+            width: 100%;
+            padding: 14px;
+            margin-bottom: 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 15px;
+            box-sizing: border-box;
+            background-color: #f9fafb;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus {
+            border-color: #0070f3;
+            background-color: #fff;
+        }
+        .forgot-link {
+            display: block;
+            text-align: center;
+            margin: -5px 0 20px 0;
+            font-size: 14px;
+            color: #6b7280;
+            text-decoration: none;
+        }
+        .btn-main {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background-color: #0070f3;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-main:hover {
+            background-color: #0056b3;
+        }
+        .toggle-text {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #4b5563;
+        }
+        .toggle-text span {
+            color: #0070f3;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 25px 0;
+            color: #9ca3af;
+            font-size: 14px;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .divider:not(:empty)::before { margin-right: .25em; }
+        .divider:not(:empty)::after { margin-left: .25em; }
+        
+        .social-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            box-sizing: border-box;
+            text-decoration: none;
+        }
+        .btn-facebook {
+            background-color: #3b5998;
+            color: white;
+            border: none;
+        }
+        .btn-facebook:hover { background-color: #2d4373; }
+        .btn-google {
+            background-color: #ffffff;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+        .btn-google:hover { background-color: #f9fafb; }
+        .social-icon {
+            margin-right: 10px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .hidden { display: none; }
+        .message { color: #dc2626; background-color: #fef2f2; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; border: 1px solid #fee2e2; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. SANDUUQA LOGIN-KA -->
+    <div class="card" id="login-card">
+        <h1>Login</h1>
+        
+        {% if error %}
+            <div class="message">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" action="/login">
+            <input type="email" name="username" placeholder="Email" required />
+            <input type="password" name="password" placeholder="Password" required />
+            <a href="#" class="forgot-link">Forgot password?</a>
+            <button type="submit" class="btn-main">Login</button>
+        </form>
+
+        <div class="toggle-text">Don't have an account? <span onclick="showSignup()">Signup</span></div>
+        
+        <div class="divider">Or</div>
+
+        <!-- Badhamada OAuth ee Login-ka -->
+        <a href="/login/facebook" class="social-btn btn-facebook">
+            <span class="social-icon">f</span> Login with Facebook
+        </a>
+        <a href="/login/google" class="social-btn btn-google">
+            <span class="social-icon">G</span> Login with Google
+        </a>
+    </div>
+
+    <!-- 2. SANDUUQA SIGNUP-KA -->
+    <div class="card hidden" id="signup-card">
+        <h1>Signup</h1>
+        <form method="post" action="/signup">
+            <input type="email" name="username" placeholder="Email" required />
+            <input type="password" name="password" id="sign-pass" placeholder="Create password" required />
+            <input type="password" id="confirm-pass" placeholder="Confirm password" required />
+            <button type="submit" class="btn-main">Signup</button>
+        </form>
+
+        <div class="toggle-text">Already have an account? <span onclick="showLogin()">Login</span></div>
+        
+        <div class="divider">Or</div>
+
+        <!-- Badhamada OAuth ee Signup-ka -->
+        <a href="/login/facebook" class="social-btn btn-facebook">
+            <span class="social-icon">f</span> Login with Facebook
+        </a>
+        <a href="/login/google" class="social-btn btn-google">
+            <span class="social-icon">G</span> Login with Google
+        </a>
+    </div>
+
+    <script>
+        const loginCard = document.getElementById('login-card');
+        const signupCard = document.getElementById('signup-card');
+
+        function showSignup() {
+            loginCard.classList.add('hidden');
+            signupCard.classList.remove('hidden');
+        }
+
+        function showLogin() {
+            signupCard.classList.add('hidden');
+            loginCard.classList.remove('hidden');
+        }
+
+        // Hubinta in labada password ay isku mid yihiin kahor intaan foomka la dirin
+        document.querySelector('#signup-card form').addEventListener('submit', function(e) {
+            const pass = document.getElementById('sign-pass').value;
+            const confirmPass = document.getElementById('confirm-pass').value;
+            if (pass !== confirmPass) {
+                e.preventDefault();
+                alert("Furayaasha sirta ah isku mid maaha! Fadlan sax.");
+            }
+        });
+    </script>
+</body>
+</html>
