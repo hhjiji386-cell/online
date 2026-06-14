@@ -1,8 +1,2 @@
-Flask==3.0.2
-Flask-CORS==4.0.0
-supabase>=2.0.0
-bcrypt
-pandas>=2.0.0
-plotly>=5.18.0
-psycopg2-binary
-mysql-connector-python
+flask==3.0.2
+flask-cors==4.0.0
